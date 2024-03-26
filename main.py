@@ -11,17 +11,14 @@ def check_pose(pose):
 	return
 
 def normalize_pose(pose):
-	base = pose.landmark[0] #apparently this is not a deep copy and it's the same pointer, to do deep copy copy values manually xd
-	print ("________base________\n", base)
+	base = [pose.landmark[0].x, pose.landmark[0].y, pose.landmark[0].z]
 	i = 0
 	#get distance from land[0] to land[5] to determine the (distance from camera/size of hand) and make it relative
 	while i < 21:
-		print("before:", pose.landmark[i])
-		pose.landmark[i].x -= base.x
-		pose.landmark[i].y -= base.y
-		pose.landmark[i].z -= base.z
+		pose.landmark[i].x -= base[0]
+		pose.landmark[i].y -= base[1]
+		pose.landmark[i].z -= base[2]
 		print("after:", pose.landmark[i])
-		print ("base still:", base, "i is", i)
 		i += 1
 	print ("====================\n")
 
@@ -40,6 +37,7 @@ def record_pose(frame, results):
 
 def capturing(mp_drawing, mp_hands):
 	capture = cv.VideoCapture(0)
+	cooldown = 0
 	if not capture.isOpened():
 		print("Cannot open camera")
 		exit()
@@ -59,10 +57,13 @@ def capturing(mp_drawing, mp_hands):
 					mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 				check_pose(results)
 			cv.imshow('Pose recorder', frame)
-			if kb.is_pressed('r+e+c'):
+			if kb.is_pressed('r+e+c') and cooldown <= 0:
+				cooldown = 40
 				record_pose(frame, results)
 			if cv.waitKey(1) == ord('q'):
 				break
+			if cooldown > 0:
+				cooldown -= 1
 	capture.release()
 	cv.destroyAllWindows()
 
