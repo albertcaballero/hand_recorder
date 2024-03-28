@@ -22,11 +22,7 @@ def normalize_pose(pose):
 		i += 1
 	print ("====================\n")
 
-def record_pose(frame, results):
-	countdown = 150
-	if (countdown > 0):
-		cv.putText(frame, text="3", org=(100,100), fontFace=cv.FONT_HERSHEY_TRIPLEX, fontScale=2, color=(100,100,100), thickness=3)
-		countdown -= 1
+def record_pose(results):
 	if (results.multi_hand_landmarks):
 		new_pose = results.multi_hand_landmarks[0]
 		normalize_pose(new_pose)
@@ -56,14 +52,15 @@ def capturing(mp_drawing, mp_hands):
 				for hand_landmarks in results.multi_hand_landmarks:
 					mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 				check_pose(results)
-			cv.imshow('Pose recorder', frame)
 			if kb.is_pressed('r+e+c') and cooldown <= 0:
 				cooldown = 40
-				record_pose(frame, results)
+				record_pose(results)
+			if cooldown > 0:
+				cv.putText(frame, text="Pls wait...", org=(100,100), fontFace=cv.FONT_HERSHEY_TRIPLEX, fontScale=2, color=(100,100,100), thickness=3)
+				cooldown -= 1
 			if cv.waitKey(1) == ord('q'):
 				break
-			if cooldown > 0:
-				cooldown -= 1
+			cv.imshow('Pose recorder', frame)
 	capture.release()
 	cv.destroyAllWindows()
 
