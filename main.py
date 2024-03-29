@@ -1,10 +1,18 @@
 import cv2 as cv
 import mediapipe as mp
 import keyboard as kb
-# import json
+import json as js
 # from . import parsing
 
 error_margin = 0.1
+
+def save_pose(pose):
+	pose_file = open("./copy.json", "w")
+	# stro = js.dumps(pose) #crashes hahah
+	# file. write(stro)
+	print(pose, file=pose_file)
+	pose_file.close()
+	
 
 def check_pose(pose):
 	global error_margin
@@ -18,14 +26,14 @@ def normalize_pose(pose):
 		pose.landmark[i].x -= base[0]
 		pose.landmark[i].y -= base[1]
 		pose.landmark[i].z -= base[2]
-		print("after:", pose.landmark[i])
 		i += 1
-	print ("====================\n")
 
 def record_pose(results):
 	if (results.multi_hand_landmarks):
 		new_pose = results.multi_hand_landmarks[0]
 		normalize_pose(new_pose)
+		save_pose(new_pose)
+		#save it here to the array and put it on json
 		return new_pose
 	else:
 		print("no pose detected")
