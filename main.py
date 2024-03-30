@@ -2,15 +2,14 @@ import cv2 as cv
 import mediapipe as mp
 import keyboard as kb
 import json as js
-# from . import parsing
+import parsing
 
 error_margin = 0.1
 
 def save_pose(pose):
 	pose_file = open("./copy.json", "w")
-	# stro = js.dumps(pose) #crashes hahah
-	# file. write(stro)
-	print(pose, file=pose_file)
+	#needs to take into account all the previous poses
+	js.dump(pose, pose_file, cls=parsing.NormalizedLandmarkListEncoder, indent=4)
 	pose_file.close()
 	
 
