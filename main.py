@@ -11,11 +11,29 @@ def save_pose(pose):
 	#needs to take into account all the previous poses
 	js.dump(pose, pose_file, cls=parsing.NormalizedLandmarkListEncoder, indent=4)
 	pose_file.close()
-	
 
-def check_pose(pose):
+def substract_landmark(landm1, landm2):
+	if abs(landm1.x - landm2.x) > error_margin:
+		return False
+	if abs(landm1.y - landm2.y) > error_margin:
+		return False
+	# if abs(landm1.z - landm2.z) > error_margin:
+	# 	return False
+	return True
+
+def check_pose(pose, loaded):
 	global error_margin
-	return
+	i = 0
+	if loaded == 0:
+		return
+	normalize_pose(pose)
+	while i < 21:
+		if substract_landmark(pose.landmark[i], loaded.landmark[i]) == False:
+			print ("FALSE THAT")
+			return False
+		i += 1
+	print ("TRUE THIS")
+	return True
 
 def normalize_pose(pose):
 	base = [pose.landmark[0].x, pose.landmark[0].y, pose.landmark[0].z]
@@ -41,6 +59,7 @@ def record_pose(results):
 def capturing(mp_drawing, mp_hands):
 	capture = cv.VideoCapture(0)
 	cooldown = 0
+	loaded = 0
 	if not capture.isOpened():
 		print("Cannot open camera")
 		exit()
@@ -58,10 +77,10 @@ def capturing(mp_drawing, mp_hands):
 			if (results.multi_hand_landmarks):
 				for hand_landmarks in results.multi_hand_landmarks:
 					mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-				check_pose(results)
+				check_pose(results.multi_hand_landmarks[0], loaded)
 			if kb.is_pressed('r+e+c') and cooldown <= 0:
 				cooldown = 40
-				record_pose(results)
+				loaded = record_pose(results)
 			if cooldown > 0:
 				cv.putText(frame, text="Pls wait...", org=(100,100), fontFace=cv.FONT_HERSHEY_TRIPLEX, fontScale=2, color=(100,100,100), thickness=3)
 				cooldown -= 1

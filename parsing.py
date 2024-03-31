@@ -54,9 +54,9 @@ def check_file_content(poses):
 
 def load_poses(fname):
 	file = check_file_permissions(fname)
-	data = json.load(file, cls=NormalizedLandmarkListDecoder)
+	poses = json.load(file, cls=NormalizedLandmarkListDecoder)
 	# poses = data['poses']
 	file.close()
-	if check_file_content(poses) == False:
-		exit
+	# if check_file_content(poses) == False:
+	# 	exit
 	return poses
