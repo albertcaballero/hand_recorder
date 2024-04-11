@@ -1,30 +1,44 @@
 import json
 from mediapipe.framework.formats import landmark_pb2
 
+class loadedPose:
+	def __init__(self, landmarks, idNum=1, shortcut = '') -> None:
+		self.idNum = idNum
+		self.landmarklist = landmarks
+		self.shortcut = shortcut
+	def __str__(self) -> str:
+		return f"id={self.idNum},\nshortcut={self.shortcut},\nlandmarks={self.landmarks}"
+
 class NormalizedLandmarkListEncoder(json.JSONEncoder):
-	def default(self, obj):
-		if isinstance(obj, landmark_pb2.NormalizedLandmarkList):
-			return {
-				'id': 1,
-				'landmarks': [
-					{'x': landmark.x, 'y': landmark.y, 'z': landmark.z}
-					for landmark in obj.landmark
-				],
-				'shortcut': ''
-			}
-		return json.JSONEncoder.default(self, obj)
+	def default(self, loaded):
+		if isinstance(loaded, loadedPose):
+			landmark_lists_data = []
+			for pose in loaded:
+				landmark_list_data = {'landmarks': [], 'shortcut': '', 'id': 1}
+				for landmark in loaded.landmark:
+					landmark_list_data['landmarks'].append({'x': landmark.x, 'y': landmark.y, 'z': landmark.z})
+				landmark_list_data['shortcut'] = "holii"
+				landmark_list_data['id'] = 1
+				landmark_lists_data.append(landmark_list_data)
+			return {'landmark_lists': landmark_lists_data}
+		return json.JSONEncoder.default(self, loadedPose)
 	
 class NormalizedLandmarkListDecoder(json.JSONDecoder):
 	def decode(self, json_str):
 		data = json.loads(json_str)
-		if 'landmarks' in data:
-			landmark_list = landmark_pb2.NormalizedLandmarkList()
-			for landmark_data in data['landmarks']:
-				landmark = landmark_list.landmark.add()
-				landmark.x = landmark_data['x']
-				landmark.y = landmark_data['y']
-				landmark.z = landmark_data['z']
-			return landmark_list
+		if 'landmark_lists' in data:
+			loadedArr = []
+			for landmark_list_data in data['landmark_lists']:
+				loaded = loadedPose(landmark_pb2.NormalizedLandmarkList())
+				for landmark_data in landmark_list_data['landmarks']:
+					point = loaded.landmarklist.landmark.add()
+					point.x = landmark_data['x']
+					point.y = landmark_data['y']
+					point.z = landmark_data['z']
+				loaded.idNum = landmark_list_data['id']
+				loaded.shortcut = landmark_list_data['shortcut']
+				loadedArr.append(loaded)
+			return loadedArr
 		return json.JSONDecoder.decode(self, json_str)
 
 
@@ -43,20 +57,17 @@ def check_file_permissions(fname):
 		exit
 	return file
 
-def check_file_content(poses):
-	for i in poses:
-		if len(poses[i]['points']) != 21:
-			return False
-		for j in poses[i]['points']:
-			if len(poses[i]['points'][j]) != 3:
-				return False
-	return True
 
 def load_poses(fname):
-	file = check_file_permissions(fname)
+	# file = check_file_permissions(fname)
+	file = open("./copy.json", "r")
 	poses = json.load(file, cls=NormalizedLandmarkListDecoder)
 	# poses = data['poses']
 	file.close()
-	# if check_file_content(poses) == False:
-	# 	exit
 	return poses
+
+def save_poses(loaded_poses):
+	pose_file = open("./copy.json", "w")
+	#needs to take into account all the previous poses
+	json.dump(loaded_poses, pose_file, cls=NormalizedLandmarkListEncoder, indent=4)
+	pose_file.close()

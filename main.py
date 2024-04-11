@@ -4,62 +4,54 @@ import keyboard as kb
 import json as js
 import parsing
 
-error_margin = 0.1
-
-def save_pose(pose):
-	pose_file = open("./copy.json", "w")
-	#needs to take into account all the previous poses
-	js.dump(pose, pose_file, cls=parsing.NormalizedLandmarkListEncoder, indent=4)
-	pose_file.close()
+error_margin = 0.07
 
 def substract_landmark(landm1, landm2):
 	if abs(landm1.x - landm2.x) > error_margin:
 		return False
 	if abs(landm1.y - landm2.y) > error_margin:
 		return False
-	# if abs(landm1.z - landm2.z) > error_margin:
-	# 	return False
+	if abs(landm1.z - landm2.z) > error_margin:
+		return False
 	return True
 
-def check_pose(pose, loaded):
+def compare_poses(loaded, pose):
+	for i in range(21):
+		if not substract_landmark(pose.landmark, loaded.landmark):
+			return False
+
+def check_poses(pose, loadedPoses):
 	global error_margin
 	i = 0
-	if loaded == 0:
+	if len(loadedPoses) == 0:
 		return
 	normalize_pose(pose)
-	while i < 21:
-		if substract_landmark(pose.landmark[i], loaded.landmark[i]) == False:
-			print ("FALSE THAT")
-			return False
-		i += 1
-	print ("TRUE THIS")
+	for loaded in loadedPoses:
+		compare_poses(loaded, pose)
 	return True
 
 def normalize_pose(pose):
 	base = [pose.landmark[0].x, pose.landmark[0].y, pose.landmark[0].z]
 	i = 0
 	#get distance from land[0] to land[5] to determine the (distance from camera/size of hand) and make it relative
-	while i < 21:
+	for i in range(21):
 		pose.landmark[i].x -= base[0]
 		pose.landmark[i].y -= base[1]
 		pose.landmark[i].z -= base[2]
-		i += 1
 
 def record_pose(results):
 	if (results.multi_hand_landmarks):
 		new_pose = results.multi_hand_landmarks[0]
 		normalize_pose(new_pose)
-		save_pose(new_pose)
-		#save it here to the array and put it on json
+		#here append to the existing list
 		return new_pose
 	else:
 		print("no pose detected")
-		return False
+		return 0
 
-def capturing(mp_drawing, mp_hands):
+def capturing(mp_drawing, mp_hands, loaded_poses):
 	capture = cv.VideoCapture(0)
 	cooldown = 0
-	loaded = 0
 	if not capture.isOpened():
 		print("Cannot open camera")
 		exit()
@@ -77,10 +69,10 @@ def capturing(mp_drawing, mp_hands):
 			if (results.multi_hand_landmarks):
 				for hand_landmarks in results.multi_hand_landmarks:
 					mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-				check_pose(results.multi_hand_landmarks[0], loaded)
+				check_pose(results.multi_hand_landmarks[0], loaded_poses)
 			if kb.is_pressed('r+e+c') and cooldown <= 0:
 				cooldown = 40
-				loaded = record_pose(results)
+				record_pose(results, loaded_poses)
 			if cooldown > 0:
 				cv.putText(frame, text="Pls wait...", org=(100,100), fontFace=cv.FONT_HERSHEY_TRIPLEX, fontScale=2, color=(100,100,100), thickness=3)
 				cooldown -= 1
@@ -92,5 +84,6 @@ def capturing(mp_drawing, mp_hands):
 
 mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
-# saved_poses = load_poses("poses.pose")
-capturing(mp_drawing, mp_hands)
+loaded_poses = parsing.load_poses("poses.pose")
+capturing(mp_drawing, mp_hands, loaded_poses)
+# parsing.save_poses(loaded_poses)
