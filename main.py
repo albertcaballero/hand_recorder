@@ -17,18 +17,20 @@ def substract_landmark(landm1, landm2):
 
 def compare_poses(loaded, pose):
 	for i in range(21):
-		if not substract_landmark(pose.landmark, loaded.landmark):
+		if substract_landmark(pose.landmark[i], loaded.landmarklist.landmark[i]) == False:
 			return False
+	return True
 
 def check_poses(pose, loadedPoses):
 	global error_margin
-	i = 0
 	if len(loadedPoses) == 0:
 		return
 	normalize_pose(pose)
 	for loaded in loadedPoses:
-		compare_poses(loaded, pose)
-	return True
+		if compare_poses(loaded, pose) == True:
+			print (loaded.shortcut)
+			return True
+	return False
 
 def normalize_pose(pose):
 	base = [pose.landmark[0].x, pose.landmark[0].y, pose.landmark[0].z]
@@ -39,12 +41,13 @@ def normalize_pose(pose):
 		pose.landmark[i].y -= base[1]
 		pose.landmark[i].z -= base[2]
 
-def record_pose(results):
+def record_pose(results, loaded):
 	if (results.multi_hand_landmarks):
 		new_pose = results.multi_hand_landmarks[0]
 		normalize_pose(new_pose)
-		#here append to the existing list
-		return new_pose
+		kbshortcut = 'shortcut 1' #kb.wait()
+		app = parsing.loadedPose(landmarks=new_pose, shortcut=kbshortcut)
+		loaded.append(app)
 	else:
 		print("no pose detected")
 		return 0
@@ -69,7 +72,7 @@ def capturing(mp_drawing, mp_hands, loaded_poses):
 			if (results.multi_hand_landmarks):
 				for hand_landmarks in results.multi_hand_landmarks:
 					mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-				check_pose(results.multi_hand_landmarks[0], loaded_poses)
+				check_poses(results.multi_hand_landmarks[0], loaded_poses)
 			if kb.is_pressed('r+e+c') and cooldown <= 0:
 				cooldown = 40
 				record_pose(results, loaded_poses)
