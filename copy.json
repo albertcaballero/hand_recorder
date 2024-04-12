@@ -1,7 +1,7 @@
 {
 	"landmark_lists": [
 		{
-    	"id": 1,
+    	"id": 0,
     	"landmarks": [
     	    {
     	        "x": 0.0,
@@ -109,7 +109,7 @@
     	        "z": 0.019851762801408768
     	    }
     	],
-    	"shortcut": "ioooooo"
+    	"shortcut": "alt + tab"
 		}
 	]
 }

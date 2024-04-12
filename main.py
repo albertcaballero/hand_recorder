@@ -6,6 +6,13 @@ import parsing
 
 error_margin = 0.07
 
+def exec_shortcut(loaded, idx):
+	#add protections for invalid shortcuts and shit and idx out of range, try catch and that stuff
+	if loaded[idx].shortcut == '[type shortcut here]':
+		return
+	print (loaded[idx].shortcut)
+	kb.press_and_release(loaded[idx].shortcut)
+
 def substract_landmark(landm1, landm2):
 	if abs(landm1.x - landm2.x) > error_margin:
 		return False
@@ -24,13 +31,12 @@ def compare_poses(loaded, pose):
 def check_poses(pose, loadedPoses):
 	global error_margin
 	if len(loadedPoses) == 0:
-		return
+		return -1
 	normalize_pose(pose)
 	for loaded in loadedPoses:
 		if compare_poses(loaded, pose) == True:
-			print (loaded.shortcut)
-			return True
-	return False
+			return loaded.idNum
+	return -1
 
 def normalize_pose(pose):
 	base = [pose.landmark[0].x, pose.landmark[0].y, pose.landmark[0].z]
@@ -45,8 +51,9 @@ def record_pose(results, loaded):
 	if (results.multi_hand_landmarks):
 		new_pose = results.multi_hand_landmarks[0]
 		normalize_pose(new_pose)
-		kbshortcut = 'shortcut 1' #kb.wait()
-		app = parsing.loadedPose(landmarks=new_pose, shortcut=kbshortcut)
+		kbshortcut = '[type shortcut here]'
+		idx = len(loaded)
+		app = parsing.loadedPose(landmarks=new_pose, shortcut=kbshortcut, idNum=idx)
 		loaded.append(app)
 	else:
 		print("no pose detected")
@@ -54,7 +61,8 @@ def record_pose(results, loaded):
 
 def capturing(mp_drawing, mp_hands, loaded_poses):
 	capture = cv.VideoCapture(0)
-	cooldown = 0
+	recCooldown = 0
+	execCooldown = 0
 	if not capture.isOpened():
 		print("Cannot open camera")
 		exit()
@@ -72,13 +80,19 @@ def capturing(mp_drawing, mp_hands, loaded_poses):
 			if (results.multi_hand_landmarks):
 				for hand_landmarks in results.multi_hand_landmarks:
 					mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
-				check_poses(results.multi_hand_landmarks[0], loaded_poses)
-			if kb.is_pressed('r+e+c') and cooldown <= 0:
-				cooldown = 40
+				idx = check_poses(results.multi_hand_landmarks[0], loaded_poses)
+				if idx >= 0 and execCooldown <= 0:
+					exec_shortcut(loaded_poses, idx)
+					execCooldown = 40
+			if kb.is_pressed('r+e+c') and recCooldown <= 0:
+				recCooldown = 40
 				record_pose(results, loaded_poses)
-			if cooldown > 0:
+			if recCooldown > 0:
 				cv.putText(frame, text="Pls wait...", org=(100,100), fontFace=cv.FONT_HERSHEY_TRIPLEX, fontScale=2, color=(100,100,100), thickness=3)
-				cooldown -= 1
+				recCooldown -= 1
+			if execCooldown > 0:
+				cv.putText(frame, text="Executing...", org=(100,100), fontFace=cv.FONT_HERSHEY_TRIPLEX, fontScale=2, color=(100,100,100), thickness=3)
+				execCooldown -= 1
 			if cv.waitKey(1) == ord('q'):
 				break
 			cv.imshow('Pose recorder', frame)
