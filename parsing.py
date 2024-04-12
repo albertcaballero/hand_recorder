@@ -9,25 +9,24 @@ class loadedPose:
 	def __str__(self) -> str:
 		return f"id={self.idNum},\nshortcut={self.shortcut},\nlandmarks={self.landmarks}"
 
-class NormalizedLandmarkListEncoder(json.JSONEncoder):
-	def default(self, loaded):
-		if isinstance(loaded, loadedPose):
-			landmark_lists_data = []
-			for pose in loaded:
-				landmark_list_data = {'landmarks': [], 'shortcut': '', 'id': 1}
-				for landmark in loaded.landmark:
-					landmark_list_data['landmarks'].append({'x': landmark.x, 'y': landmark.y, 'z': landmark.z})
-				landmark_list_data['shortcut'] = "holii"
-				landmark_list_data['id'] = 1
-				landmark_lists_data.append(landmark_list_data)
-			return {'landmark_lists': landmark_lists_data}
-		return json.JSONEncoder.default(self, loadedPose)
+def poseEncoder(loaded):
+	if isinstance(loaded, list) and isinstance(loaded[0], loadedPose):
+		data = []
+		for pose in loaded:
+			landmark_list_data = {'id': 1, 'shortcut': '', 'landmarks': []}
+			for landmark in pose.landmarklist.landmark:
+				landmark_list_data['landmarks'].append({'x': landmark.x, 'y': landmark.y, 'z': landmark.z})
+			landmark_list_data['shortcut'] = pose.shortcut
+			landmark_list_data['id'] = pose.idNum
+			data.append(landmark_list_data)
+		return {'landmark_lists': data}
 	
 class NormalizedLandmarkListDecoder(json.JSONDecoder):
 	def decode(self, json_str):
 		data = json.loads(json_str)
 		if 'landmark_lists' in data:
 			loadedArr = []
+			i = 0
 			for landmark_list_data in data['landmark_lists']:
 				loaded = loadedPose(landmark_pb2.NormalizedLandmarkList())
 				for landmark_data in landmark_list_data['landmarks']:
@@ -35,7 +34,8 @@ class NormalizedLandmarkListDecoder(json.JSONDecoder):
 					point.x = landmark_data['x']
 					point.y = landmark_data['y']
 					point.z = landmark_data['z']
-				loaded.idNum = landmark_list_data['id']
+				loaded.idNum = i
+				i += 1
 				loaded.shortcut = landmark_list_data['shortcut']
 				loadedArr.append(loaded)
 			return loadedArr
@@ -60,14 +60,13 @@ def check_file_permissions(fname):
 
 def load_poses(fname):
 	# file = check_file_permissions(fname)
-	file = open("./copy.json", "r")
+	file = open("./pose.json", "r")
 	poses = json.load(file, cls=NormalizedLandmarkListDecoder)
-	# poses = data['poses']
 	file.close()
 	return poses
 
 def save_poses(loaded_poses):
-	pose_file = open("./copy.json", "w")
-	#needs to take into account all the previous poses
-	json.dump(loaded_poses, pose_file, cls=NormalizedLandmarkListEncoder, indent=4)
+	pose_file = open("./pose.json", "w")
+	str = poseEncoder(loaded_poses)
+	json.dump(str, pose_file, indent=4)
 	pose_file.close()

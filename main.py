@@ -81,10 +81,10 @@ def capturing(mp_drawing, mp_hands, loaded_poses):
 				for hand_landmarks in results.multi_hand_landmarks:
 					mp_drawing.draw_landmarks(frame, hand_landmarks, mp_hands.HAND_CONNECTIONS)
 				idx = check_poses(results.multi_hand_landmarks[0], loaded_poses)
-				if idx >= 0 and execCooldown <= 0:
+				if idx >= 0 and execCooldown <= 0 and recCooldown <= 0:
 					exec_shortcut(loaded_poses, idx)
 					execCooldown = 40
-			if kb.is_pressed('r+e+c') and recCooldown <= 0:
+			if kb.is_pressed('r+e+c') and recCooldown <= 0 and execCooldown <= 0:
 				recCooldown = 40
 				record_pose(results, loaded_poses)
 			if recCooldown > 0:
@@ -103,4 +103,9 @@ mp_drawing = mp.solutions.drawing_utils
 mp_hands = mp.solutions.hands
 loaded_poses = parsing.load_poses("poses.pose")
 capturing(mp_drawing, mp_hands, loaded_poses)
-# parsing.save_poses(loaded_poses)
+parsing.save_poses(loaded_poses)
+
+#add way to delete poses
+#add security copy to poses file
+#split code in more files
+#add way to add shortcut on recording
