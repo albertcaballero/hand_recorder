@@ -11,7 +11,10 @@ def exec_shortcut(loaded, idx):
 	if loaded[idx].shortcut == '[type shortcut here]':
 		return
 	print (loaded[idx].shortcut)
-	kb.press_and_release(loaded[idx].shortcut)
+	if len(loaded[idx].shortcut) > 1 and '+' not in loaded[idx].shortcut:
+		kb.write(loaded[idx].shortcut)
+	else:
+		kb.press_and_release(loaded[idx].shortcut)
 
 def substract_landmark(landm1, landm2):
 	if abs(landm1.x - landm2.x) > error_margin:
